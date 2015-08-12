@@ -20,39 +20,41 @@ var NameParse = (function(){
 		var nameParts = [];
 		var lastName = "";
 		var firstName = "";
-		var initials = "";
+        var middleName = "";
+        var nickName = "";
 		var word = null;
 		var j = 0;
 		var i = 0;
 
-		// split into words
-		// completely ignore any words in parentheses
-		nameParts = fullastName.split(" ").filter(function(namePart){
-			return (namePart.indexOf("(") === -1);
-		});
+        // Check if we have nicknames.
+        // Example: Dr. Juan Q. Xavier de la Vega III (Doc Vega)
+        // Doc Vega is the nickname
+        var nickNameIndex = fullastName.indexOf("(");
+        if (nickNameIndex != -1) {
+            while(nickNameIndex != -1) {
+                var endIndex = fullastName.indexOf(")", nickNameIndex);
+                nickName = " " + nickName + fullastName.substring(nickNameIndex + 1, endIndex);
+                fullastName = this.removeCharsAt(fullastName, nickNameIndex, endIndex - nickNameIndex + 1).trim();
+
+                nickNameIndex = fullastName.indexOf("(");
+            }
+        }
+        nameParts = fullastName.split(" ");
 
 		var numWords = nameParts.length;
+
 		// is the first word a title? (Mr. Mrs, etc)
 		var salutation = this.is_salutation(nameParts[0]);
 		var suffix = this.is_suffix(nameParts[numWords - 1]);
+
 		// set the range for the middle part of the name (trim prefixes & suffixes)
 		var start = (salutation) ? 1 : 0;
 		var end = (suffix) ? numWords - 1 : numWords;
 
 		word = nameParts[start];
-		// if we start off with an initial, we'll call it the first name
-		if (this.is_initial(word)) {
-			// if so, do a look-ahead to see if they go by their middle name 
-			// for ex: "R. Jason Smith" => "Jason Smith" & "R." is stored as an initial
-			// but "R. J. Smith" => "R. Smith" and "J." is stored as an initial
-			if (this.is_initial(nameParts[start + 1])) {
-				firstName += " " + word.toUpperCase();
-			} else {
-				initials += " " + word.toUpperCase();
-			}
-		} else {
-			firstName += " " + this.fix_case(word);
-		}
+
+        // Get the first name
+        firstName += " " + this.fix_case(word);
 
 		// concat the first name
 		for (i=start + 1; i<(end - 1); i++) {
@@ -63,11 +65,7 @@ var NameParse = (function(){
 				break;
 			}
 
-			if (this.is_initial(word)) {
-				initials += " " + word.toUpperCase(); 
-			} else {
-				firstName += " " + this.fix_case(word);
-			}
+            middleName += " " + this.fix_case(word);
 		}
 		
 		// check that we have more than 1 word in our string
@@ -82,8 +80,9 @@ var NameParse = (function(){
 		return {
 			"salutation": salutation || "",
 			"firstName": firstName.trim(),
-			"initials": initials.trim(),
+            "middleName": middleName.trim(),
 			"lastName": lastName.trim(),
+			"nickName": nickName.trim(),
 			"suffix": suffix || ""
 		};
 	};
@@ -120,11 +119,12 @@ var NameParse = (function(){
 		word = this.removeIgnoredChars(word).toLowerCase();
 		// these are some common suffixes - what am I missing?
 		var suffixArray = [
-			'I','II','III','IV','V','Senior','Junior','Jr','Sr','PhD','APR','RPh','PE','MD','MA','DMD','CME',
-			"BVM","CFRE","CLU","CPA","CSC","CSJ","DC","DD","DDS","DO","DVM","EdD","Esq",
-			"JD","LLD","OD","OSB","PC","Ret","RGS","RN","RNC","SHCJ","SJ","SNJM","SSMO",
-			"USA","USAF","USAFR","USAR","USCG","USMC","USMCR","USN","USNR"
-		];
+            '2', 'APR', 'BVM', 'CFRE', 'CLU', 'CME', 'CPA', 'CSC', 'CSJ', 'DC', 'DD', 'DDS', 'DMD', 'DO', 'DVM', 'EdD',
+            'Esq', 'I', 'II', 'III', 'IV', 'JD', 'Jr', 'Junior', 'LLD', 'MA', 'MD', 'OD', 'OSB', 'PC', 'PE', 'PhD',
+            'RGS', 'RN', 'RNC', 'RPh', 'Ret', 'SHCJ', 'SJ', 'SNJM', 'SSMO', 'Senior', 'Sr', 'USA', 'USAF', 'USAFR',
+            'USAR', 'USCG', 'USMC', 'USMCR', 'USN', 'USNR', 'V', 'cfp', 'chfc', 'clu', 'dds', 'dmd', 'do', 'dpm', 'esq',
+            'esquire', 'i', 'ii', 'iii', 'iv', 'jnr', 'jr', 'ma', 'mba', 'md', 'mp', 'phd', 'qc', 'snr', 'sr', 'v'
+        ];
 
 		var suffixIndex = suffixArray.map(function(suffix){
 			return suffix.toLowerCase();
@@ -141,14 +141,11 @@ var NameParse = (function(){
 	NameParse.is_compound_lastName = function (word) {
 		word = word.toLowerCase();
 		// these are some common prefixes that identify a compound last names - what am I missing?
-		var words = ['vere','von','van','de','del','della','di','da','pietro','vanden','du','st.','st','la','lo','ter'];
+		var words = [
+            'abu', 'bin', 'bon', 'bon', 'da', 'dal', 'de', 'del', 'della', 'der', 'di', 'du', 'dí', 'ibn', 'la',
+            'le', 'lo', 'pietro', 'san', 'st', 'st.', 'ste', 'ter', 'van', 'vanden', 'vel', 'vere', 'von'
+        ];
 		return (words.indexOf(word) >= 0);
-	};
-
-	// single letter, possibly followed by a period
-	NameParse.is_initial = function (word) {
-		word = this.removeIgnoredChars(word);
-		return (word.length === 1);
 	};
 
 	// detect mixed case words like "McDonald"
@@ -179,6 +176,11 @@ var NameParse = (function(){
 				return thisWord.substr(0,1).toUpperCase() + thisWord.substr(1).toLowerCase();
 			}
 		}, this).join(seperator);
+	};
+
+    // Helper function to replace characters in a string
+	NameParse.removeCharsAt = function (word, index, charcount) {
+		return word.substr(0, index) + word.substr(index + charcount);
 	};
 
 	return NameParse;

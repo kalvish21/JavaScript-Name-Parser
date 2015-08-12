@@ -1,0 +1,11 @@
+# OS
+*.DS_Store
+.svn
+
+# Mercurial
+.hg/
+.hgignore
+
+# IDE
+.idea/
+workspace.xml
