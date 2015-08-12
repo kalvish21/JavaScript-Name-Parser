@@ -2,16 +2,17 @@ JavaScript library to split names into their respective components (first, last,
 
 **Usage:**
 
-    var parsed = NameParse.parse("Mr. Chales P. Wooten, III");
+    var parsed = NameParse.parse("Dr. Juan Q. Xavier de la Vega III (Doc Vega)");
 
 **Results:**
 
     parsed { 
-        salutation: "Mr.", 
-        firstName: "Charles", 
-        initials: "P", 
-        lastName: "Wooten", 
-        suffix: "III" 
+        firstName: "Juan",
+        lastName: "De La Vega",
+        middleName: "Q. Xavier",
+        nickName: "Doc Vega",
+        salutation: "Dr.",
+        suffix: "III"
     }
 
 **The algorithm:**
