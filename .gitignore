@@ -6,6 +6,9 @@
 .hg/
 .hgignore
 
+# Git
+.git/
+
 # IDE
 .idea/
 workspace.xml
